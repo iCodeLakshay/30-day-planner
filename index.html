@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>30 Days · Daily Planner</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fdf6ee;
+    --card: #fff9f3;
+    --ink: #1a1208;
+    --muted: #8a7560;
+    --accent: #d4622a;
+    --accent2: #4a7c59;
+    --accent3: #3b5fa0;
+    --accent4: #8b3a8b;
+    --accent5: #b5860d;
+    --warm: #f5e6d0;
+    --border: #e8d9c4;
+    --reward-bg: #fff7e6;
+    --reward-border: #f0c060;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* noise texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+
+  .header-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.2rem, 6vw, 3.6rem);
+    line-height: 1.1;
+    color: var(--ink);
+    margin-bottom: 10px;
+  }
+
+  header h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  header p {
+    color: var(--muted);
+    font-size: 15px;
+    font-weight: 300;
+    max-width: 420px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  .header-line {
+    width: 60px;
+    height: 2px;
+    background: var(--accent);
+    margin: 20px auto;
+  }
+
+  /* Progress bar */
+  .progress-container {
+    background: var(--warm);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px 20px;
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .progress-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .progress-bar-wrap {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent5));
+    border-radius: 99px;
+    transition: width 0.5s ease;
+  }
+  .progress-count {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  /* Nav */
+  .week-nav {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .week-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 6px 14px;
+    border-radius: 99px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .week-btn:hover, .week-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  /* Days grid */
+  .days-list { display: flex; flex-direction: column; gap: 16px; }
+
+  /* Day card */
+  .day-card {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: box-shadow 0.25s, transform 0.2s;
+    position: relative;
+  }
+  .day-card:hover {
+    box-shadow: 0 8px 32px rgba(212,98,42,0.08);
+    transform: translateY(-1px);
+  }
+  .day-card.done {
+    opacity: 0.7;
+  }
+  .day-card.done .day-header {
+    background: #f0ece6;
+  }
+
+  .day-stripe {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    border-radius: 16px 0 0 16px;
+  }
+
+  .day-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px 14px 22px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .day-number {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--ink);
+    min-width: 36px;
+    line-height: 1;
+  }
+
+  .day-meta {
+    flex: 1;
+  }
+
+  .day-title {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ink);
+    line-height: 1.3;
+    margin-bottom: 4px;
+  }
+
+  .day-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-weight: 500;
+  }
+
+  .tag-psychology { background: #f0e8f8; color: #7b3f9e; }
+  .tag-history    { background: #e8f0f8; color: #2d5fa0; }
+  .tag-philosophy { background: #e8f4ee; color: #2d6b44; }
+  .tag-movement   { background: #fdeee6; color: #c04a18; }
+  .tag-mindful    { background: #e6f4f4; color: #1f7070; }
+  .tag-audio      { background: #fff0e0; color: #a06010; }
+  .tag-book       { background: #f8e8e8; color: #9e3030; }
+  .tag-world      { background: #e8f8e8; color: #2d6b2d; }
+  .tag-science    { background: #e8ecf8; color: #2d3fa0; }
+  .tag-creative   { background: #f8f0e8; color: #8b5e00; }
+
+  .day-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .time-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .done-check {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    font-size: 13px;
+  }
+  .done-check:hover { border-color: var(--accent2); }
+  .day-card.done .done-check {
+    background: var(--accent2);
+    border-color: var(--accent2);
+    color: white;
+  }
+
+  .expand-arrow {
+    font-size: 12px;
+    color: var(--muted);
+    transition: transform 0.3s;
+    flex-shrink: 0;
+  }
+  .day-card.open .expand-arrow { transform: rotate(180deg); }
+
+  /* Day body */
+  .day-body {
+    display: none;
+    padding: 0 22px 20px 22px;
+    border-top: 1px solid var(--border);
+  }
+  .day-card.open .day-body { display: block; }
+
+  .section-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 16px 0 8px;
+  }
+
+  .task-steps {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .task-step {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .step-time {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: white;
+    padding: 2px 7px;
+    border-radius: 99px;
+    white-space: nowrap;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+  .step-text {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--ink);
+    flex: 1;
+  }
+  .step-text strong { font-weight: 500; }
+  .step-text small {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 2px;
+  }
+
+  /* Reward box */
+  .reward-box {
+    background: var(--reward-bg);
+    border: 1.5px solid var(--reward-border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-top: 16px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .reward-emoji { font-size: 20px; flex-shrink: 0; line-height: 1.2; }
+  .reward-text { font-size: 13.5px; line-height: 1.5; color: #6b4d00; }
+  .reward-text strong { display: block; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent5); margin-bottom: 2px; }
+
+  /* Alternate task */
+  .alt-box {
+    background: #f4f4f8;
+    border-left: 3px solid var(--accent3);
+    border-radius: 0 8px 8px 0;
+    padding: 10px 12px;
+    margin-top: 12px;
+  }
+  .alt-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--accent3);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .alt-text { font-size: 13px; color: #444; line-height: 1.5; }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    margin-top: 56px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.8;
+  }
+  footer em {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--accent);
+  }
+
+  @media (max-width: 500px) {
+    .day-number { font-size: 1.2rem; min-width: 28px; }
+    .day-title { font-size: 14px; }
+    .time-badge { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <header>
+    <div class="header-eyebrow">your personal journey</div>
+    <h1>30 Days of<br><em>Actually Living</em></h1>
+    <div class="header-line"></div>
+    <p>60 minutes a day. No pressure. Just you, a little curiosity, and a reason to show up tomorrow.</p>
+  </header>
+
+  <div class="progress-container">
+    <span class="progress-label">PROGRESS</span>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+    </div>
+    <span class="progress-count" id="progressCount">0 / 30 days</span>
+  </div>
+
+  <div class="week-nav">
+    <button class="week-btn active" onclick="showWeek(0)">All 30</button>
+    <button class="week-btn" onclick="showWeek(1)">Week 1</button>
+    <button class="week-btn" onclick="showWeek(2)">Week 2</button>
+    <button class="week-btn" onclick="showWeek(3)">Week 3</button>
+    <button class="week-btn" onclick="showWeek(4)">Week 4</button>
+  </div>
+
+  <div class="days-list" id="daysList"></div>
+
+  <footer>
+    <em>"You don't rise to the level of your goals — you fall to the level of your systems."</em><br>
+    This is your system. One hour. One day. Keep going. 🌱
+  </footer>
+
+</div>
+
+<script>
+const DAYS = [
+  {
+    title: "Just Float — Water Sounds & Stillness",
+    category: ["mindful"],
+    steps: [
+      { time: "30 min", text: "<strong>Lie down, close your eyes.</strong> Search 'flowing river sounds 30 minutes' on YouTube. Do absolutely nothing — no phone, no thinking agenda.", color: "#1f7070" },
+      { time: "20 min", text: "<strong>Slow stretch on your floor.</strong> Just roll your neck, open your hips, breathe. Follow your body — no YouTube needed.", color: "#1f7070" },
+      { time: "10 min", text: "<strong>Write 3 sentences.</strong> How does your body feel right now vs when you started? No pressure — 3 words is fine too.", color: "#1f7070" },
+    ],
+    reward: { emoji: "🍫", text: "Go get yourself one piece of chocolate. Eat it slowly — smell it first, then let it melt. You showed up today." },
+    alt: "Instead of lying down: sit outside (balcony/window), close your eyes, and listen to actual sounds around you for 30 minutes."
+  },
+  {
+    title: "Psychology: Why We Do What We Do",
+    category: ["psychology"],
+    steps: [
+      { time: "20 min", text: "<strong>Watch:</strong> 'Why We're All So Anxious' by The School of Life on YouTube. Short, brilliant, free.", color: "#7b3f9e" },
+      { time: "20 min", text: "<strong>Read:</strong> Search 'attachment theory explained simply'. Pick any one article — just scan and absorb.", color: "#7b3f9e" },
+      { time: "20 min", text: "<strong>Reflect:</strong> Write down 2 behaviors you've noticed in yourself this week. No judgment — just observe.", color: "#7b3f9e" },
+    ],
+    reward: { emoji: "☕", text: "Make your favorite hot drink — tea, coffee, anything. Sit and sip it with no screen for 5 minutes. That's your celebration." },
+    alt: "Watch 'The Psychology of Self-Deception' on YouTube (any channel) instead of the article."
+  },
+  {
+    title: "History: The Lost City of Indus Valley",
+    category: ["history"],
+    steps: [
+      { time: "25 min", text: "<strong>Watch:</strong> Search 'Indus Valley Civilization documentary' on YouTube. Kurzgesagt or History Channel both have great ones.", color: "#2d5fa0" },
+      { time: "20 min", text: "<strong>Read more:</strong> Wikipedia 'Mohenjo-daro' — just scroll and read whatever catches your eye. The drainage system alone will blow your mind.", color: "#2d5fa0" },
+      { time: "15 min", text: "<strong>Sketch or doodle</strong> one thing you found interesting. A map, a symbol, anything. No artistic skill required.", color: "#2d5fa0" },
+    ],
+    reward: { emoji: "🪟", text: "Sit by a window. Just look outside for 5 minutes and think about how civilizations 4,000 years ago had running water. Mind = blown." },
+    alt: "Swap with Ancient Egypt — watch 'Egypt's Lost Queens' on YouTube."
+  },
+  {
+    title: "Movement: Dance Like No One's Watching",
+    category: ["movement"],
+    steps: [
+      { time: "15 min", text: "<strong>Learn 1 move:</strong> Search '5 minute easy dance tutorial beginner' on YouTube. Any style — Bollywood, hip-hop, whatever looks fun.", color: "#c04a18" },
+      { time: "25 min", text: "<strong>Freestyle:</strong> Open Spotify/YouTube, search 'feel good playlist', and just move. No rules, no mirror, no judgment. Close the curtains if you want.", color: "#c04a18" },
+      { time: "20 min", text: "<strong>Cool down:</strong> Lie on the floor. Put on 'lo-fi chill beats'. Just breathe and let your body rest.", color: "#c04a18" },
+    ],
+    reward: { emoji: "🌟", text: "Say out loud: 'I danced today and that's actually incredible.' Then do a little victory pose. For real. No one is watching." },
+    alt: "Yoga flow instead — search '20 minute morning yoga for beginners' (Yoga with Adriene is perfect)."
+  },
+  {
+    title: "Book: Man's Search for Meaning (Frankl)",
+    category: ["book"],
+    steps: [
+      { time: "25 min", text: "<strong>Watch the summary:</strong> Search 'Man's Search for Meaning summary animated' — Academy of Ideas on YouTube has a beautiful one.", color: "#9e3030" },
+      { time: "20 min", text: "<strong>Read key quotes:</strong> Search 'Man's Search for Meaning quotes' — read 10 quotes slowly. Let them land.", color: "#9e3030" },
+      { time: "15 min", text: "<strong>Write:</strong> 'What gives MY life meaning right now?' — answer in 5-7 lines. Be honest.", color: "#9e3030" },
+    ],
+    reward: { emoji: "🙏", text: "Text one person you care about: 'Hey, thinking of you.' That's it. Meaning lives in connection." },
+    alt: "Swap with 'The Alchemist' by Paulo Coelho — search its animated summary on YouTube."
+  },
+  {
+    title: "Podcast: Hidden Brain — The Science of Us",
+    category: ["audio"],
+    steps: [
+      { time: "45 min", text: "<strong>Listen:</strong> Open Spotify or browser → Hidden Brain podcast → pick ANY episode that interests you. Lie down or walk around the room while listening.", color: "#a06010" },
+      { time: "15 min", text: "<strong>Write one thing</strong> from the episode that surprised you. One sentence is enough. What will you remember in a week?", color: "#a06010" },
+    ],
+    reward: { emoji: "🌿", text: "Water any plant you have (or just look outside at something green). Take 3 deep, slow breaths. You just fed your brain something real." },
+    alt: "Try 'Freakonomics Radio' or 'Radiolab' instead — both are free and fascinating."
+  },
+  {
+    title: "Philosophy: The Stoics & Their Superpower",
+    category: ["philosophy"],
+    steps: [
+      { time: "20 min", text: "<strong>Watch:</strong> 'An Introduction to Stoicism' — search on YouTube (einzelgänger channel is excellent for this).", color: "#2d6b44" },
+      { time: "20 min", text: "<strong>Read:</strong> Search 'Marcus Aurelius Meditations quotes' — pick 5 that resonate. These were his personal diary — 2,000 years ago.", color: "#2d6b44" },
+      { time: "20 min", text: "<strong>Practice:</strong> Write about one thing that bothered you recently — then write the Stoic response: 'What is in my control here?'", color: "#2d6b44" },
+    ],
+    reward: { emoji: "✍️", text: "Write 'I am enough, I have enough, I do enough' on a scrap of paper and stick it somewhere you'll see it." },
+    alt: "Try Epictetus instead — 'Enchiridion summary' on YouTube is only 15 minutes and equally powerful."
+  },
+  {
+    title: "World Culture: Japan's Beautiful Philosophy of Imperfection",
+    category: ["world"],
+    steps: [
+      { time: "20 min", text: "<strong>Read about Wabi-Sabi:</strong> Search 'wabi sabi Japanese philosophy explained' — find any article. It's the art of finding beauty in imperfect, incomplete things.", color: "#2d6b2d" },
+      { time: "20 min", text: "<strong>Also explore:</strong> 'Ikigai' — your reason for getting up in the morning. Search 'ikigai explained simply'.", color: "#2d6b2d" },
+      { time: "20 min", text: "<strong>Apply it:</strong> Look around your room. Find 3 'imperfect' things and write what makes them beautiful or meaningful.", color: "#2d6b2d" },
+    ],
+    reward: { emoji: "🍵", text: "Make a simple cup of tea. Drink it standing at a window. That's wabi-sabi in real life — small, imperfect, beautiful." },
+    alt: "Explore 'Hygge' — the Danish concept of cozy contentment. Search 'what is hygge'."
+  },
+  {
+    title: "Science: Black Holes & How Tiny We Are",
+    category: ["science"],
+    steps: [
+      { time: "20 min", text: "<strong>Watch:</strong> 'Black Holes Explained' by Kurzgesagt on YouTube. Easily the most mind-expanding 9 minutes you'll spend.", color: "#2d3fa0" },
+      { time: "20 min", text: "<strong>Go deeper:</strong> Search 'how big is the observable universe compared to us' — just read any explainer or watch a short video.", color: "#2d3fa0" },
+      { time: "20 min", text: "<strong>Go outside or to a window at night.</strong> Look at the sky for 10 minutes. Then write: what does this make you feel?", color: "#2d3fa0" },
+    ],
+    reward: { emoji: "🌌", text: "You are made of stardust from ancient exploded stars. Literally. Congratulate yourself — you're the universe becoming aware of itself." },
+    alt: "Swap with 'How Evolution Works' by Kurzgesagt — equally beautiful and mind-bending."
+  },
+  {
+    title: "Creative: Write a Story in 1 Page",
+    category: ["creative"],
+    steps: [
+      { time: "10 min", text: "<strong>Pick a prompt:</strong> 'A old man finds a letter he wrote to himself 30 years ago' OR 'The last tree on earth speaks' — pick one.", color: "#8b5e00" },
+      { time: "35 min", text: "<strong>Just write.</strong> Handwrite or type — 1 page, any style. Don't edit while writing. Let it be messy. Let it breathe.", color: "#8b5e00" },
+      { time: "15 min", text: "<strong>Read it back</strong> once. Underline one sentence you actually like. That sentence is yours.", color: "#8b5e00" },
+    ],
+    reward: { emoji: "📖", text: "You're a writer now. That's real. Put your story somewhere safe — a folder, a notebook. It's a small piece of you." },
+    alt: "Instead of a story: write a letter to your future self 1 year from now. What do you hope they know?"
+  },
+  {
+    title: "Psychology: The Ego & The Shadow (Jung)",
+    category: ["psychology"],
+    steps: [
+      { time: "25 min", text: "<strong>Watch:</strong> 'Carl Jung and the Shadow' on YouTube — Academy of Ideas has a beautiful 20-minute video on this.", color: "#7b3f9e" },
+      { time: "20 min", text: "<strong>Read:</strong> Search 'Jungian shadow explained simply' — the idea that we hide parts of ourselves we don't like is fascinating.", color: "#7b3f9e" },
+      { time: "15 min", text: "<strong>Write:</strong> What's one trait in other people that really bothers you? Jung says it's often something we disown in ourselves. Just sit with that.", color: "#7b3f9e" },
+    ],
+    reward: { emoji: "🪞", text: "Stand in front of a mirror. Look at yourself for 30 seconds — not critically. Just look. Say 'I see you.' That's enough." },
+    alt: "Explore 'Maslow's Hierarchy of Needs' instead — search a visual explainer and think about where you currently are."
+  },
+  {
+    title: "History: The Silk Road — Trade, Culture & Ideas",
+    category: ["history"],
+    steps: [
+      { time: "25 min", text: "<strong>Watch:</strong> Search 'Silk Road history documentary' — Overly Sarcastic Productions has a fun 20-minute version.", color: "#2d5fa0" },
+      { time: "20 min", text: "<strong>Explore:</strong> How did spices, silk, paper, and even diseases travel across the world? Read the Wikipedia intro — just the opening sections.", color: "#2d5fa0" },
+      { time: "15 min", text: "<strong>Connect the dots:</strong> Name 3 things in your life right now that exist because of ancient global trade. (Hint: spices in your kitchen, the paper in your notebook...)", color: "#2d5fa0" },
+    ],
+    reward: { emoji: "🌶️", text: "Make a snack with at least one spice in it. As you eat, think: this flavor traveled 4,000 miles to reach you." },
+    alt: "Explore the Mongol Empire — one of history's biggest empires, barely talked about. Search 'Genghis Khan Mongol empire explained'."
+  },
+  {
+    title: "Mindful Audio: Binaural Beats & Brain Waves",
+    category: ["mindful"],
+    steps: [
+      { time: "35 min", text: "<strong>Search:</strong> 'Focus binaural beats 40hz' on YouTube. Put on headphones. Close your eyes. Let your brain sync. Just breathe.", color: "#1f7070" },
+      { time: "15 min", text: "<strong>Read:</strong> 'What are binaural beats' — quick 5 min read. Understand the science of what just happened to your brain.", color: "#1f7070" },
+      { time: "10 min", text: "<strong>Journal:</strong> How did you feel during and after? Any difference in your body or clarity?", color: "#1f7070" },
+    ],
+    reward: { emoji: "🧠", text: "Your brain just experienced something scientifically interesting. Tell yourself: 'I take care of my mind.' Give yourself a gentle fist bump." },
+    alt: "Try Tibetan singing bowl sounds instead — 'Tibetan singing bowls 1 hour' on YouTube is deeply calming."
+  },
+  {
+    title: "Book: Atomic Habits — Small Changes, Big Results",
+    category: ["book"],
+    steps: [
+      { time: "25 min", text: "<strong>Watch:</strong> 'Atomic Habits by James Clear — animated summary' on YouTube (FightMediocrity channel is excellent).", color: "#9e3030" },
+      { time: "20 min", text: "<strong>The 1% rule:</strong> Search 'atomic habits 1 percent better explained'. What's one tiny habit you could start this week?", color: "#9e3030" },
+      { time: "15 min", text: "<strong>Design YOUR habit:</strong> Write: 'When I [CUE], I will [NEW HABIT], because [REASON].' Make it so small it's embarrassing how easy it is.", color: "#9e3030" },
+    ],
+    reward: { emoji: "🏆", text: "You ARE the kind of person who invests in themselves. That's an identity, not a goal. Say it out loud." },
+    alt: "Swap with 'The Power of Now' by Eckhart Tolle — any animated summary on YouTube."
+  },
+  {
+    title: "World: African Proverbs & Ancient Wisdom",
+    category: ["world"],
+    steps: [
+      { time: "20 min", text: "<strong>Read:</strong> Search '50 African proverbs and their meanings'. Read slowly. These are centuries of wisdom packed into one line.", color: "#2d6b2d" },
+      { time: "20 min", text: "<strong>Explore:</strong> Search 'Ubuntu philosophy Africa explained' — the idea that 'I am because we are' is world-changing.", color: "#2d6b2d" },
+      { time: "20 min", text: "<strong>Write your own proverb.</strong> Based on your own life experience — something you've learned the hard way. One line.", color: "#2d6b2d" },
+    ],
+    reward: { emoji: "🤝", text: "Text or call someone and ask how THEY are — genuinely. Ubuntu in action. That connection is your reward." },
+    alt: "Explore Native American philosophies — search 'Lakota Sioux spiritual beliefs' for a completely different world view."
+  },
+  {
+    title: "Movement: Stretching + Body Awareness",
+    category: ["movement"],
+    steps: [
+      { time: "30 min", text: "<strong>Follow along:</strong> Search 'full body flexibility routine for beginners' on YouTube (MommaStrong or similar). Just 30 minutes. Go slow.", color: "#c04a18" },
+      { time: "20 min", text: "<strong>Body scan meditation:</strong> Search 'body scan meditation 20 minutes' on YouTube. Lie down and follow the guided voice.", color: "#c04a18" },
+      { time: "10 min", text: "<strong>Note 3 things:</strong> Where did you feel tightness? Where felt good? Your body communicates — you just need to listen.", color: "#c04a18" },
+    ],
+    reward: { emoji: "💆", text: "Give yourself a 2-minute hand massage. Press into your palms with your thumb. Completely underrated. You deserve it." },
+    alt: "Try Qigong instead — search '20 minute qigong for beginners' — ancient Chinese movement medicine."
+  },
+  {
+    title: "Philosophy: Existentialism — Finding Freedom",
+    category: ["philosophy"],
+    steps: [
+      { time: "20 min", text: "<strong>Watch:</strong> 'Existentialism explained' by The School of Life — Jean-Paul Sartre's 'existence precedes essence' will rearrange your thinking.", color: "#2d6b44" },
+      { time: "20 min", text: "<strong>Read about Albert Camus' Absurdism:</strong> Search 'Camus absurdism explained simply'. The myth of Sisyphus and why we must imagine him happy.", color: "#2d6b44" },
+      { time: "20 min", text: "<strong>Big question:</strong> Write your honest answer to — 'If I was completely free, with no expectations from anyone, what would I do with my life?'", color: "#2d6b44" },
+    ],
+    reward: { emoji: "🌅", text: "Watch a sunset or sunrise (even a 5-minute YouTube timelapse counts). Camus would say that's the whole point." },
+    alt: "Explore Simone de Beauvoir — one of the greatest thinkers of the 20th century, wildly underrated."
+  },
+  {
+    title: "Podcast: Something You've Never Heard Of",
+    category: ["audio"],
+    steps: [
+      { time: "45 min", text: "<strong>Pick one random episode</strong> from: 'Stuff You Missed in History Class', 'Radiolab', or '99% Invisible'. Close your eyes, pick an episode title that intrigues you, and listen.", color: "#a06010" },
+      { time: "15 min", text: "<strong>Tell someone</strong> (or write in your journal) the most interesting thing you just learned. Teaching = deepest learning.", color: "#a06010" },
+    ],
+    reward: { emoji: "🎧", text: "You just learned something most people around you don't know. That's quietly powerful. Mark it in your calendar: 'Day 18 — curious.'" },
+    alt: "Explore 'The Moth' podcast — real people telling true stories live on stage. Deeply human, no editing."
+  },
+  {
+    title: "Science: How Your Brain Creates 'You'",
+    category: ["science"],
+    steps: [
+      { time: "20 min", text: "<strong>Watch:</strong> 'How Does Your Brain Work?' by Kurzgesagt or 'Consciousness explained simply' on YouTube.", color: "#2d3fa0" },
+      { time: "20 min", text: "<strong>Read:</strong> Search 'neuroplasticity explained' — your brain physically changes based on what you think and do. This 30-day planner is literally rewiring you.", color: "#2d3fa0" },
+      { time: "20 min", text: "<strong>Meditate for real:</strong> Search 'focused attention meditation 20 minutes' — the simplest form. Watch thoughts like clouds passing.", color: "#2d3fa0" },
+    ],
+    reward: { emoji: "🧬", text: "You are the most complex object in the known universe. Your reward is that you now know that. Stand tall for 2 minutes." },
+    alt: "Explore 'The Science of Sleep' — search 'why do we dream neuroscience' for rabbit holes that last for hours."
+  },
+  {
+    title: "History: The Renaissance — Art That Changed Everything",
+    category: ["history"],
+    steps: [
+      { time: "20 min", text: "<strong>Watch:</strong> Search 'Italian Renaissance explained' — History of the World covers this beautifully in 15-20 minutes.", color: "#2d5fa0" },
+      { time: "20 min", text: "<strong>Visual tour:</strong> Search 'Google Arts & Culture' — it's free and lets you walk through the Louvre, Vatican Museums, and the Uffizi. Spend 20 minutes just looking at art.", color: "#2d5fa0" },
+      { time: "20 min", text: "<strong>Pick one artwork</strong> that made you feel something. Write: what does this painting make you think about?", color: "#2d5fa0" },
+    ],
+    reward: { emoji: "🎨", text: "Draw something. Anything. 2 minutes. It doesn't need to be good — Leonardo da Vinci filled notebooks with bad sketches too." },
+    alt: "Explore Islamic Golden Age instead — a period when Muslim scholars preserved and expanded all of human knowledge."
+  },
+  {
+    title: "Psychology: The Stories We Tell Ourselves",
+    category: ["psychology"],
+    steps: [
+      { time: "20 min", text: "<strong>Watch:</strong> 'Cognitive Distortions explained' on YouTube — understanding how our mind lies to us is one of the most useful things ever.", color: "#7b3f9e" },
+      { time: "20 min", text: "<strong>Read about Narrative Therapy:</strong> Search 'narrative therapy explained simply'. The idea that you are NOT your story — you are the author.", color: "#7b3f9e" },
+      { time: "20 min", text: "<strong>Rewrite one story:</strong> Pick one negative thing you believe about yourself. Write the same story from a more compassionate narrator's voice.", color: "#7b3f9e" },
+    ],
+    reward: { emoji: "💌", text: "Write yourself a 3-sentence note of encouragement. Fold it. Put it in your wallet. Read it next time things feel hard." },
+    alt: "Explore 'The Drama Triangle' by Karpman — fascinating model of victim, rescuer, and persecutor patterns."
+  },
+  {
+    title: "World Culture: Latin America's Magic Realism",
+    category: ["world"],
+    steps: [
+      { time: "20 min", text: "<strong>Read:</strong> Search '100 Years of Solitude summary' or 'what is magic realism'. Gabriel García Márquez blended fantasy and reality like no one else.", color: "#2d6b2d" },
+      { time: "20 min", text: "<strong>Music:</strong> Search 'Latin American traditional music playlist' on YouTube — from the Andes to the Caribbean. Just listen and close your eyes.", color: "#2d6b2d" },
+      { time: "20 min", text: "<strong>Imagine:</strong> Write a single paragraph of YOUR life told as magic realism — make one ordinary thing in your day feel magical.", color: "#2d6b2d" },
+    ],
+    reward: { emoji: "🌺", text: "Put on a Latin or world music song and just move freely for 3 minutes. You just experienced a different world from your room." },
+    alt: "Explore Bollywood's history and influence on Indian identity — a rich cultural rabbit hole."
+  },
+  {
+    title: "Mindful: Gratitude Practice That Actually Works",
+    category: ["mindful"],
+    steps: [
+      { time: "20 min", text: "<strong>Watch:</strong> 'The Science of Gratitude' — search the Greater Good Science Center on YouTube. The research is genuinely surprising.", color: "#1f7070" },
+      { time: "20 min", text: "<strong>Deep gratitude list:</strong> Write 10 things you're grateful for — BUT add WHY for each one. 'I'm grateful for my eyes because...' Go specific.", color: "#1f7070" },
+      { time: "20 min", text: "<strong>Sit outside or by a window.</strong> Pick one thing you can see and really look at it for 5 minutes. Then free write for 15 minutes about whatever comes.", color: "#1f7070" },
+    ],
+    reward: { emoji: "🌸", text: "Pick one thing nearby — a plant, a mug, a book. Hold it and think: 'This small thing is a miracle I usually ignore.' Set it somewhere prominent." },
+    alt: "Try 'loving-kindness meditation' (metta) — search '15 minute loving kindness meditation'. Scientifically shown to increase happiness."
+  },
+  {
+    title: "Book: Sapiens — A Brief History of Us",
+    category: ["book"],
+    steps: [
+      { time: "25 min", text: "<strong>Watch:</strong> 'Sapiens book summary' by FightMediocrity or WIL on YouTube — Yuval Noah Harari's ideas about how myths hold humanity together.", color: "#9e3030" },
+      { time: "20 min", text: "<strong>Deep dive on one idea:</strong> Search 'Sapiens cognitive revolution explained' — when humans started telling stories and why it changed everything.", color: "#9e3030" },
+      { time: "15 min", text: "<strong>Write:</strong> What's one shared myth/story that runs YOUR life? (Money, success, status, religion — all are stories we collectively believe.)", color: "#9e3030" },
+    ],
+    reward: { emoji: "🦴", text: "You just thought about 200,000 years of human history. Your reward: simply exist for 5 minutes. Sit still. That's the whole game." },
+    alt: "Try 'Guns, Germs, and Steel' by Jared Diamond — why did some civilizations dominate others? Fascinating and controversial."
+  },
+  {
+    title: "Movement: Walk With Intention",
+    category: ["movement"],
+    steps: [
+      { time: "30 min", text: "<strong>Walk for 30 minutes</strong> — outside if possible, inside if not. The rule: NO PHONE. Just walk and notice things. The cracks in the pavement. A bird. A color.", color: "#c04a18" },
+      { time: "20 min", text: "<strong>Sensory journaling:</strong> Write 5 things you SAW, 3 you HEARD, 2 you SMELLED, 1 you TOUCHED. Forces your brain to be present.", color: "#c04a18" },
+      { time: "10 min", text: "<strong>Gentle floor yoga:</strong> Just legs-up-the-wall pose for 10 minutes. It resets your nervous system. Search it if needed.", color: "#c04a18" },
+    ],
+    reward: { emoji: "👟", text: "Your legs carried you today. Give your feet a little squeeze — they work hard and never get thanked." },
+    alt: "If you can't go outside: 20 min of indoor free movement + 10 min jumping rope or dancing to one album."
+  },
+  {
+    title: "Philosophy: Buddhism & The Nature of Suffering",
+    category: ["philosophy"],
+    steps: [
+      { time: "20 min", text: "<strong>Watch:</strong> 'Buddhism explained' by The School of Life or 'The Four Noble Truths' on YouTube — the core of Buddhist thought in 15 minutes.", color: "#2d6b44" },
+      { time: "20 min", text: "<strong>Read about Impermanence (Anicca):</strong> Search 'Buddhist concept impermanence explained'. Everything changes — including this difficult thing you're going through.", color: "#2d6b44" },
+      { time: "20 min", text: "<strong>Sit in stillness.</strong> 20 minutes. No guided audio. Just you and your breath. When thoughts come, notice them and return to breath. That's it.", color: "#2d6b44" },
+    ],
+    reward: { emoji: "🕯️", text: "Light a candle or incense if you have one. Sit with it for 3 minutes. Watch the flame. Nothing to do. Nowhere to be." },
+    alt: "Explore Taoism instead — 'The Tao Te Ching explained' is a beautiful rabbit hole about flow and non-resistance."
+  },
+  {
+    title: "World: Foods That Tell History",
+    category: ["world"],
+    steps: [
+      { time: "25 min", text: "<strong>Watch:</strong> Search 'history of food globalization' or 'how chocolate became chocolate documentary'. Food history is secretly the best history.", color: "#2d6b2d" },
+      { time: "20 min", text: "<strong>Pick one food you love.</strong> Search its full history — where it came from, how it traveled, who grew it. (Tomatoes in Italy? Only since 1600.)", color: "#2d6b2d" },
+      { time: "15 min", text: "<strong>Cook or eat something simple</strong> — but eat it slowly, intentionally, tasting every bite. This is a mindfulness practice in disguise.", color: "#2d6b2d" },
+    ],
+    reward: { emoji: "🍊", text: "Peel an orange slowly. Smell it before you eat it. That scent traveled centuries across continents to reach your nose. Enjoy it fully." },
+    alt: "Explore the history of salt — yes, salt. It's the reason wars were fought and empires rose. Search 'salt history'."
+  },
+  {
+    title: "Creative: Make a 'Things I Love' Collage",
+    category: ["creative"],
+    steps: [
+      { time: "30 min", text: "<strong>Tear through old magazines, newspapers, or print images.</strong> Cut out anything that makes you feel something — colors, textures, words, shapes. No theme required.", color: "#8b5e00" },
+      { time: "20 min", text: "<strong>Arrange and stick</strong> them onto a page however feels right. This is YOUR aesthetic. Let it be chaotic, beautiful, weird.", color: "#8b5e00" },
+      { time: "10 min", text: "<strong>Sit with it.</strong> What does this collage say about who you are or who you want to be? Write 3 words that describe it.", color: "#8b5e00" },
+    ],
+    reward: { emoji: "✂️", text: "Put your collage somewhere you can see it. It's a visual map of your inner world. That's not small — that's rare." },
+    alt: "No magazines? Create a digital moodboard on Pinterest instead — same energy, different medium."
+  },
+  {
+    title: "Audio: The Most Relaxing Hour of Your Life",
+    category: ["audio"],
+    steps: [
+      { time: "30 min", text: "<strong>Search:</strong> 'Rain on tent sounds 30 minutes' OR 'cafe ambience with rain' on YouTube. Get under a blanket. Just exist.", color: "#a06010" },
+      { time: "20 min", text: "<strong>Read something joyful:</strong> Search 'interesting random facts' or 'cool things happening in the world today'. Let curiosity lead.", color: "#a06010" },
+      { time: "10 min", text: "<strong>No-phone stretch:</strong> Just roll your shoulders, open your chest, breathe out slowly 5 times. No video needed.", color: "#a06010" },
+    ],
+    reward: { emoji: "🛋️", text: "You gave yourself permission to rest today. That's not lazy — it's an act of radical self-care. Tell yourself: 'I choose rest when I need it.'" },
+    alt: "Try 'ASMR nature walk' videos — being walked through forests, rain, or waves. Surprisingly restorative."
+  },
+  {
+    title: "History: The Women Who Changed the World (Silently)",
+    category: ["history"],
+    steps: [
+      { time: "25 min", text: "<strong>Watch:</strong> Search 'women in history who changed the world' or 'Rosalind Franklin DNA story'. Choose one woman you didn't learn about in school.", color: "#2d5fa0" },
+      { time: "20 min", text: "<strong>Read more:</strong> Search her name + biography. What obstacles did she face? What did she contribute that was often erased?", color: "#2d5fa0" },
+      { time: "15 min", text: "<strong>Reflect and write:</strong> Who are the unacknowledged people in YOUR life who made you who you are?", color: "#2d5fa0" },
+    ],
+    reward: { emoji: "👑", text: "Think of one woman in your life who deserves more credit. Write her name and one thing she gave you. You don't have to send it — just acknowledge it." },
+    alt: "Explore untold Indian history — Rani Laxmibai, Savitribai Phule, or Raziya Sultan — powerful stories rarely told."
+  },
+  {
+    title: "Day 30: The Arrival — Reflecting & Celebrating",
+    category: ["mindful", "creative"],
+    steps: [
+      { time: "20 min", text: "<strong>Read back through any notes</strong> you wrote over the past 30 days. What surprised you? What made you feel alive?", color: "#1f7070" },
+      { time: "20 min", text: "<strong>Write a letter to Day 1 you.</strong> What do you know now that you didn't then? Be gentle, be honest, be kind.", color: "#8b5e00" },
+      { time: "20 min", text: "<strong>Set one intention</strong> for the next 30 days. Not a goal — an intention. How do you want to FEEL? What do you want to keep exploring?", color: "#2d6b44" },
+    ],
+    reward: { emoji: "🎉", text: "YOU DID IT. 30 days. Buy yourself something small and meaningful — your favorite snack, a flower, a notebook. You earned it. Take a photo and remember this moment." },
+    alt: "Celebrate differently: cook one meal from scratch for yourself, something you've never made before. Eating it alone is a ceremony."
+  },
+];
+
+const CATEGORY_MAP = {
+  psychology: "tag-psychology",
+  history: "tag-history",
+  philosophy: "tag-philosophy",
+  movement: "tag-movement",
+  mindful: "tag-mindful",
+  audio: "tag-audio",
+  book: "tag-book",
+  world: "tag-world",
+  science: "tag-science",
+  creative: "tag-creative",
+};
+const CATEGORY_LABEL = {
+  psychology: "Psychology", history: "History", philosophy: "Philosophy",
+  movement: "Movement", mindful: "Mindfulness", audio: "Podcast / Audio",
+  book: "Book", world: "World Culture", science: "Science", creative: "Creative",
+};
+
+const STRIPE_COLORS = {
+  psychology: "#9b59b6", history: "#3498db", philosophy: "#2ecc71",
+  movement: "#e74c3c", mindful: "#1abc9c", audio: "#f39c12",
+  book: "#e74c3c", world: "#27ae60", science: "#2980b9", creative: "#d4ac0d",
+};
+
+let done = JSON.parse(localStorage.getItem('done30') || '[]');
+
+function saveDone() { localStorage.setItem('done30', JSON.stringify(done)); }
+
+function updateProgress() {
+  const pct = Math.round((done.length / 30) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressCount').textContent = done.length + ' / 30 days';
+}
+
+function renderDays(filter) {
+  const list = document.getElementById('daysList');
+  list.innerHTML = '';
+  DAYS.forEach((day, i) => {
+    const dayNum = i + 1;
+    const week = Math.ceil(dayNum / 7);
+    if (filter > 0 && week !== filter) return;
+    const isDone = done.includes(i);
+    const primaryCat = day.category[0];
+    const stripeColor = STRIPE_COLORS[primaryCat] || '#999';
+    const card = document.createElement('div');
+    card.className = 'day-card' + (isDone ? ' done' : '');
+    card.dataset.index = i;
+    card.innerHTML = `
+      <div class="day-stripe" style="background:${stripeColor}"></div>
+      <div class="day-header" onclick="toggleCard(${i})">
+        <div class="day-number">${String(dayNum).padStart(2,'0')}</div>
+        <div class="day-meta">
+          <div class="day-title">${day.title}</div>
+          <div class="day-tags">
+            ${day.category.map(c => `<span class="tag ${CATEGORY_MAP[c]}">${CATEGORY_LABEL[c]}</span>`).join('')}
+          </div>
+        </div>
+        <div class="day-right">
+          <span class="time-badge">60 min</span>
+          <div class="done-check" onclick="toggleDone(event,${i})">${isDone ? '✓' : ''}</div>
+          <span class="expand-arrow">▾</span>
+        </div>
+      </div>
+      <div class="day-body">
+        <div class="section-title">Today's Session</div>
+        <ul class="task-steps">
+          ${day.steps.map(s => `
+            <li class="task-step">
+              <span class="step-time" style="background:${s.color}">${s.time}</span>
+              <span class="step-text">${s.text}</span>
+            </li>`).join('')}
+        </ul>
+        <div class="reward-box">
+          <span class="reward-emoji">${day.reward.emoji}</span>
+          <div class="reward-text"><strong>🎁 Your Reward</strong>${day.reward.text}</div>
+        </div>
+        <div class="alt-box">
+          <div class="alt-label">↩ Alternate Task</div>
+          <div class="alt-text">${day.alt}</div>
+        </div>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function toggleCard(i) {
+  const card = document.querySelector(`.day-card[data-index="${i}"]`);
+  if (!card) return;
+  card.classList.toggle('open');
+}
+
+function toggleDone(e, i) {
+  e.stopPropagation();
+  if (done.includes(i)) done = done.filter(x => x !== i);
+  else done.push(i);
+  saveDone();
+  updateProgress();
+  const card = document.querySelector(`.day-card[data-index="${i}"]`);
+  if (card) {
+    card.classList.toggle('done', done.includes(i));
+    const check = card.querySelector('.done-check');
+    check.textContent = done.includes(i) ? '✓' : '';
+  }
+}
+
+let currentWeek = 0;
+function showWeek(w) {
+  currentWeek = w;
+  document.querySelectorAll('.week-btn').forEach((b,i) => b.classList.toggle('active', i === w));
+  renderDays(w);
+}
+
+renderDays(0);
+updateProgress();
+</script>
+</body>
+</html>
